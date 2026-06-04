@@ -462,11 +462,10 @@ class RealtekamebaPlatform(PlatformBase):
     def _write_package_json(self, sdk_dir, source):
         """Write a PIO-compatible package.json into the SDK directory.
 
-        The shape mirrors framework-espidf-4.60001.0/package.json (verified
-        by extracting the actual tarball from registry.platformio.org —
-        only 7 fields: name, version, title, description, keywords, homepage,
-        license, repository). We add a ``source`` marker so we can tell apart
-        local-override vs git-cloned installs during debugging.
+        The shape follows the minimal PlatformIO framework package.json
+        manifest (only 7 fields: name, version, title, description, keywords,
+        homepage, license, repository). We add a ``source`` marker so we can
+        tell apart local-override vs git-cloned installs during debugging.
         """
         version = self._derive_sdk_version(sdk_dir)
         manifest = {
