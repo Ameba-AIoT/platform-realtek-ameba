@@ -264,4 +264,7 @@ jobs:
         env:
           # Base SDK only (matches prefetch); XDK gets its own job later.
           AMEBA_SDK_EDITION: sdk
+          # CI runners are outside CN; use the official index for the SDK
+          # venv's pip instead of the China-locale default mirror.
+          PIP_INDEX_URL: https://pypi.org/simple
         run: pio run -d "examples/${{ matrix.example }}"

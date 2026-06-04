@@ -347,8 +347,13 @@ class RealtekamebaPlatform(PlatformBase):
         import hashlib
 
         venv_dir = os.path.join(sdk_dir, ".venv")
-        venv_python = os.path.join(venv_dir, "bin", "python3")
-        venv_pip = os.path.join(venv_dir, "bin", "pip")
+        # virtualenv lays out executables under Scripts/ on Windows, bin/ else.
+        if IS_WINDOWS:
+            venv_python = os.path.join(venv_dir, "Scripts", "python.exe")
+            venv_pip = os.path.join(venv_dir, "Scripts", "pip.exe")
+        else:
+            venv_python = os.path.join(venv_dir, "bin", "python3")
+            venv_pip = os.path.join(venv_dir, "bin", "pip")
         requirements = os.path.join(sdk_dir, "tools", "requirements.txt")
         stamp_path = os.path.join(venv_dir, ".pio_requirements_sha256")
 
