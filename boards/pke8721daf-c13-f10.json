@@ -1,0 +1,41 @@
+{
+  "build": {
+    "core": "ameba-rtos",
+    "cpu": "cortex-m33",
+    "extra_flags": "-DRTL8721Dx",
+    "f_cpu": "345000000L",
+    "mcu": "RTL8721Dx",
+    "soc": "RTL8721Dx",
+    "cores": [
+      {"sdk_project": "km4", "isa": "arm-cortex-m"},
+      {"sdk_project": "km0", "isa": "arm-cortex-m"}
+    ]
+  },
+  "connectivity": [
+    "wifi",
+    "bluetooth"
+  ],
+  "debug": {
+    "openocd_target": "rtl8721dx.cfg",
+    "default_tool": "openocd"
+  },
+  "frameworks": [
+    "ameba-rtos"
+  ],
+  "monitor": {
+    "speed": 1500000
+  },
+  "name": "PKE8721DAF-C13-F10 (RTL8721DAF)",
+  "upload": {
+    "maximum_ram_size": 524288,
+    "maximum_size": 4194304,
+    "protocol": "ameba",
+    "protocols": [
+      "ameba",
+      "openocd",
+      "jlink"
+    ]
+  },
+  "url": "https://aiot.realmcu.com/zh/center/hardware/detail/56",
+  "vendor": "Realtek"
+}

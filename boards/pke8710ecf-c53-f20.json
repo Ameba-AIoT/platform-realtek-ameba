@@ -1,0 +1,41 @@
+{
+  "build": {
+    "core": "ameba-rtos",
+    "cpu": "cortex-m33",
+    "extra_flags": "-DRTL8710E",
+    "f_cpu": "400000000L",
+    "mcu": "RTL8710E",
+    "soc": "RTL8710E",
+    "cores": [
+      {"sdk_project": "km4", "isa": "arm-cortex-m"},
+      {"sdk_project": "kr4", "isa": "riscv"}
+    ]
+  },
+  "connectivity": [
+    "wifi",
+    "bluetooth"
+  ],
+  "debug": {
+    "openocd_target": "rtl8710e.cfg",
+    "default_tool": "openocd"
+  },
+  "frameworks": [
+    "ameba-rtos"
+  ],
+  "monitor": {
+    "speed": 1500000
+  },
+  "name": "PKE8710ECF-C53-F20 (RTL8710ECF)",
+  "upload": {
+    "maximum_ram_size": 786432,
+    "maximum_size": 8388608,
+    "protocol": "ameba",
+    "protocols": [
+      "ameba",
+      "openocd",
+      "jlink"
+    ]
+  },
+  "url": "https://aiot.realmcu.com/zh/center/hardware/detail/50",
+  "vendor": "Realtek"
+}

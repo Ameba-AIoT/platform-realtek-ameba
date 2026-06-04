@@ -1,0 +1,48 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build artifacts (committed examples should NOT include these)
+examples/*/.pio/
+build_RTL*/
+soc_info.json
+examples/*/compile_commands.json
+examples/*/app_example/_pio_src_fragment.cmake
+
+# Toolchain cache (auto-fetched by SDK on first build)
+.cache/
+
+# Internal-only docs (not shipped in release)
+ARCH.md
+PROGRESS.md
+.hermes/
+
+# Local dev / AI-assistant context (not part of the published platform)
+.claude/
+CLAUDE.md
+
+# Test artifacts
+tests/.pytest_cache/
+tests/**/__pycache__/
+.test-venv/
+
+# pio pkg pack output
+*.tar.gz
