@@ -16,8 +16,12 @@ jobs:
   # Layer 1: lint (~10s, fast feedback)
   # =========================================================================
   lint:
-    name: Lint (Python + JSON + board manifests)
-    runs-on: ubuntu-latest
+    name: Lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -30,15 +34,20 @@ jobs:
         run: pip install --quiet ruff
 
       - name: Run lint
+        shell: bash
         run: ./tests/lint.sh
 
   # =========================================================================
   # Layer 2a: Python unit tests (~1 min, mock-based, no SDK needed)
   # =========================================================================
   unit:
-    name: Unit tests
-    runs-on: ubuntu-latest
+    name: Unit tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +63,7 @@ jobs:
         # cd into tests/ to dodge the platform.py-vs-stdlib-platform name
         # collision. (Importing pytest pulls in stdlib `platform`, which
         # python's resolution finds our platform.py first if cwd is repo root.)
+        shell: bash
         run: |
           cd tests
           python -m pytest unit/ -v
@@ -91,9 +101,9 @@ jobs:
           path: |
             ~/.platformio/packages/framework-ameba-rtos
             ~/rtk-toolchain
-          key: ameba-sdk-toolchain-${{ hashFiles('platform.json', 'platform.py') }}
+          key: ameba-sdk-toolchain-${{ runner.os }}-${{ hashFiles('platform.json', 'platform.py') }}
           restore-keys: |
-            ameba-sdk-toolchain-
+            ameba-sdk-toolchain-${{ runner.os }}-
 
       - name: Install platform globally
         if: steps.cache.outputs.cache-hit != 'true'
@@ -170,9 +180,9 @@ jobs:
           path: |
             ~/.platformio/packages/framework-ameba-rtos
             ~/rtk-toolchain
-          key: ameba-sdk-toolchain-${{ hashFiles('platform.json', 'platform.py') }}
+          key: ameba-sdk-toolchain-${{ runner.os }}-${{ hashFiles('platform.json', 'platform.py') }}
           restore-keys: |
-            ameba-sdk-toolchain-
+            ameba-sdk-toolchain-${{ runner.os }}-
 
       - name: Run integration test ${{ matrix.test }}
         env:
@@ -204,17 +214,24 @@ jobs:
   # builds every env declared in that example's platformio.ini.
   # =========================================================================
   examples:
-    name: Example build (${{ matrix.example }})
-    runs-on: ubuntu-latest
+    name: Example build (${{ matrix.os }} / ${{ matrix.example }})
+    runs-on: ${{ matrix.os }}
     needs: prefetch
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         example:
           - ameba-blink
           - ameba-wifi-connect
           - ameba-mqtt
           - ameba-http-client
+        include:
+          # Windows: cold-build one example to exercise the mingw32 toolchain
+          # path end-to-end. (No Windows prefetch cache yet, so this clones
+          # the SDK + fetches the Windows toolchain from scratch.)
+          - os: windows-latest
+            example: ameba-blink
     steps:
       - uses: actions/checkout@v4
 
@@ -223,11 +240,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install PlatformIO Core
-        run: pip install --quiet --upgrade platformio
+      - name: Install build tools (PlatformIO + ninja)
+        run: pip install --quiet --upgrade platformio ninja
 
       - name: Install platform globally
-        run: pio pkg install -g -p "file://$GITHUB_WORKSPACE"
+        shell: bash
+        run: pio pkg install -g -p "symlink://."
 
       - name: Restore SDK + toolchain cache
         uses: actions/cache@v4
@@ -235,11 +253,12 @@ jobs:
           path: |
             ~/.platformio/packages/framework-ameba-rtos
             ~/rtk-toolchain
-          key: ameba-sdk-toolchain-${{ hashFiles('platform.json', 'platform.py') }}
+          key: ameba-sdk-toolchain-${{ runner.os }}-${{ hashFiles('platform.json', 'platform.py') }}
           restore-keys: |
-            ameba-sdk-toolchain-
+            ameba-sdk-toolchain-${{ runner.os }}-
 
       - name: Build example
+        shell: bash
         env:
           # Base SDK only (matches prefetch); XDK gets its own job later.
           AMEBA_SDK_EDITION: sdk

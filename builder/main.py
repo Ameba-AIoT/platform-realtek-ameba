@@ -80,15 +80,32 @@ def _find_sdk_dir():
     )
 
 
+# Host OS detection. The Ameba SDK ships a Linux and a Windows toolchain
+# (no macOS); paths differ by host (linux/newlib vs mingw32/newlib, etc.).
+IS_WINDOWS = os.name == "nt"
+
+
 def _find_prebuilts_dir():
-    """Locate the ameba prebuilts (cmake/ninja/ccache)."""
+    """Locate the ameba prebuilts (cmake/ninja/ccache).
+
+    The SDK ships these per host OS: ``prebuilts-linux-*`` on Linux,
+    ``prebuilts-windows-*`` on Windows. We glob so the version suffix
+    doesn't need hardcoding, and key off the matching setenv script.
+    """
+    import glob
+    setenv = "setenv.bat" if IS_WINDOWS else "setenv.sh"
+    pattern = "prebuilts-windows*" if IS_WINDOWS else "prebuilts-linux*"
+    globbed = sorted(
+        glob.glob(os.path.expanduser(join("~/rtk-toolchain", pattern))),
+        reverse=True,
+    )
     candidates = [
         os.environ.get("AMEBA_PREBUILTS_DIR", ""),
-        os.path.expanduser("~/rtk-toolchain/prebuilts-linux-1.0.3"),
+        *globbed,
         os.path.expanduser("~/.platformio/packages/tool-ameba-prebuilts"),
     ]
     for candidate in candidates:
-        if candidate and isdir(candidate) and isfile(join(candidate, "setenv.sh")):
+        if candidate and isdir(candidate) and isfile(join(candidate, setenv)):
             return candidate
     return None  # SDK will still work; just relies on system cmake/ninja
 
@@ -422,7 +439,8 @@ def _make_sdk_env():
     sdk_env["TARGET_SOC"] = SOC
 
     path_parts = []
-    sdk_venv_bin = join(SDK_DIR, ".venv", "bin")
+    # virtualenv puts executables in Scripts/ on Windows, bin/ elsewhere.
+    sdk_venv_bin = join(SDK_DIR, ".venv", "Scripts" if IS_WINDOWS else "bin")
     if isdir(sdk_venv_bin):
         path_parts.append(sdk_venv_bin)
         sdk_env["VIRTUAL_ENV"] = join(SDK_DIR, ".venv")
@@ -793,7 +811,8 @@ def _resolve_arm_size_tool():
     """Find arm-none-eabi-size in the SDK-managed toolchain cache.
 
     The SDK auto-fetches the toolchain into ${RTK_TOOLCHAIN_DIR}/asdk-<version>/
-    on first build. We glob for any `asdk-*/linux/newlib/bin/arm-none-eabi-size`.
+    on first build, under a host-specific subdir: ``linux/newlib`` on Linux,
+    ``mingw32/newlib`` on Windows. We glob for any matching arm-none-eabi-size.
     Returns None if not yet fetched (size report will silently no-op until then).
 
     Search order matches _make_sdk_env(): $RTK_TOOLCHAIN_DIR override first,
@@ -804,8 +823,10 @@ def _resolve_arm_size_tool():
         os.environ.get("RTK_TOOLCHAIN_DIR")
         or os.path.expanduser("~/rtk-toolchain")
     )
+    host_subdir = "mingw32" if IS_WINDOWS else "linux"
+    size_exe = "arm-none-eabi-size.exe" if IS_WINDOWS else "arm-none-eabi-size"
     candidates = sorted(glob.glob(
-        join(cache_root, "asdk-*", "linux", "newlib", "bin", "arm-none-eabi-size")
+        join(cache_root, "asdk-*", host_subdir, "newlib", "bin", size_exe)
     ))
     return candidates[-1] if candidates else None
 
