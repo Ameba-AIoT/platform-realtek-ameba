@@ -5,7 +5,7 @@
 #      triggers SDK clone + venv setup on first `pio run`.
 #
 # This is the "happy path" smoke for the install pipeline. Cold-cache
-# CI run takes ~5 minutes (base SDK ~30MB clone + ~280MB toolchain);
+# CI run takes ~10 minutes (base SDK ~100MB clone / ~440MB on disk + ~280MB toolchain);
 # warm cache (after actions/cache hit) ~30 seconds. Honors
 # $AMEBA_SDK_EDITION (default "sdk"); CI keeps it on the base SDK.
 #

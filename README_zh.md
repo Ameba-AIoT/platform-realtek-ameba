@@ -5,24 +5,15 @@
 PlatformIO 平台，支持 **Realtek Ameba** 系列 Wi-Fi + Bluetooth 低功耗 IoT
 SoC，基于官方 `ameba-rtos` SDK。
 
-## 设计思路
-
-本平台是一层薄胶水代码（约 600 行），构建在上游 `ameba.py` 驱动之上。
-CMake、Ninja、asdk/vsdk 工具链以及每个 SoC 的构建逻辑全部留在
-`ameba-rtos` 内部 —— PlatformIO 调用 `ameba.py build` 和
-`ameba.py flash`，把生成的 `app.bin` 复制到标准的 `.pio/build/<env>/`
-位置。
-
-这种方式让平台始终和 SDK 自带的逻辑保持一致，而不是另起炉灶重新实现
-构建系统。
-
 ## 支持的开发板
 
-| 开发板 | SoC | 规格 | 状态 |
-|---|---|---|---|
-| **PKE8721DAF-C13-F10** | RTL8721Dx  | Cortex-M33 双核 (KM4 345 MHz + KM0)，Wi-Fi 4 + BLE 5.0 | ✅ 编译/烧录/串口已验证 |
-| **PKE8710ECF-C53-F20** | RTL8710E   | Cortex-M33 (400 MHz) + KR4，Wi-Fi 6 + BLE 5.2 | 🟡 板级配置存在，硬件未实测 |
-| **PKE8713ECM-VA4-N43** | RTL8713E   | HiFi5 + Cortex-M33 + KR4，Wi-Fi 6 + BLE 5.2 + 音频 DSP | ✅ 编译/烧录/串口已验证 |
+点击开发板名称可跳转到 aiot.realmcu.com 上的产品页面。
+
+| 开发板 | SoC | CPU | RAM | Flash | 无线 |
+|---|---|---|---|---|---|
+| [**PKE8721DAF-C13-F10**](https://aiot.realmcu.com/zh/center/hardware/detail/56) | RTL8721Dx | ARM Cortex-M33 双核 (KM4 @ 345 MHz + KM0) | 512 KB | 4 MB | Wi-Fi 4 + BLE 5.0 |
+| [**PKE8710ECF-C53-F20**](https://aiot.realmcu.com/zh/center/hardware/detail/50) | RTL8710E | ARM Cortex-M33 @ 400 MHz + RISC-V (KR4) | 768 KB | 8 MB | Wi-Fi 6 + BLE 5.2 |
+| [**PKE8713ECM-VA4-N43**](https://aiot.realmcu.com/zh/center/hardware/detail/52) | RTL8713E | ARM Cortex-M33 @ 400 MHz + RISC-V (KR4) + HiFi5 音频 DSP | 768 KB | 32 MB | Wi-Fi 6 + BLE 5.2 |
 
 ## 快速开始（全新机器）
 
@@ -96,10 +87,10 @@ pio run
 ```
 
 首次编译会下载：
-- Ameba **基础 SDK**（约 30 MB shallow clone —— Wi-Fi + BT，不含子模块）
+- Ameba **基础 SDK**（约 100 MB shallow clone，落盘约 440 MB —— Wi-Fi + BT，不含子模块）
 - asdk/vsdk 工具链（每族约 280 MB）到 `~/rtk-toolchain/`
 
-冷启动首次编译：约 5 分钟。之后增量编译：约 15 秒。
+冷启动首次编译：约 10 分钟（主要耗在 SDK clone + 工具链下载，受网速影响）。之后增量编译：约 15 秒。
 
 需要 **XDK** 高阶功能（AI 语音、TensorFlow Lite、UI/LVGL、音频）？
 在**首次编译前**设置 `AMEBA_SDK_EDITION=xdk` —— 详见下方
@@ -149,7 +140,7 @@ Realtek 把 ameba-rtos 分成两个版本：
 
 | 版本 | 内容 | 首次下载 |
 |---|---|---|
-| **SDK**（默认） | Wi-Fi、蓝牙 —— 基础开发平台 | 约 30 MB |
+| **SDK**（默认） | Wi-Fi、蓝牙 —— 基础开发平台 | 约 100 MB（落盘约 440 MB） |
 | **XDK**（扩展） | 在 SDK 基础上**额外包含** AI 语音、TensorFlow Lite（tflite_micro）、UI（LVGL）、音频 | 约 1.1 GB |
 
 大部分项目只需基础 SDK，所以默认就拉它。需要扩展版的话，**在首次编译前**

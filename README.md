@@ -5,24 +5,15 @@
 PlatformIO platform for the **Realtek Ameba** family of Wi-Fi + Bluetooth
 Low Power IoT SoCs, backed by the official `ameba-rtos` SDK.
 
-## Approach
-
-This platform is a thin glue layer (~600 LoC) on top of the upstream
-`ameba.py` driver. CMake, Ninja, the asdk/vsdk toolchain, and per-SoC
-build logic all stay inside `ameba-rtos` — PlatformIO calls
-`ameba.py build` and `ameba.py flash` and copies the resulting
-`app.bin` into the standard `.pio/build/<env>/` location.
-
-That keeps the platform aligned with whatever the SDK ships, instead of
-re-implementing the build system separately.
-
 ## Supported boards
 
-| Board | SoC | Spec | Status |
-|---|---|---|---|
-| **PKE8721DAF-C13-F10** | RTL8721Dx  | Cortex-M33 dual-core (KM4 345 MHz + KM0), Wi-Fi 4 + BLE 5.0 | ✅ build / flash / monitor verified |
-| **PKE8710ECF-C53-F20** | RTL8710E   | Cortex-M33 (400 MHz) + KR4, Wi-Fi 6 + BLE 5.2 | 🟡 board file present, not yet hardware-verified |
-| **PKE8713ECM-VA4-N43** | RTL8713E   | HiFi5 + Cortex-M33 + KR4, Wi-Fi 6 + BLE 5.2 + audio DSP | ✅ build / flash / monitor verified |
+Click a board name to open its product page on aiot.realmcu.com.
+
+| Board | SoC | CPU | RAM | Flash | Wireless |
+|---|---|---|---|---|---|
+| [**PKE8721DAF-C13-F10**](https://aiot.realmcu.com/zh/center/hardware/detail/56) | RTL8721Dx | Dual-core ARM Cortex-M33 (KM4 @ 345 MHz + KM0) | 512 KB | 4 MB | Wi-Fi 4 + BLE 5.0 |
+| [**PKE8710ECF-C53-F20**](https://aiot.realmcu.com/zh/center/hardware/detail/50) | RTL8710E | ARM Cortex-M33 @ 400 MHz + RISC-V (KR4) | 768 KB | 8 MB | Wi-Fi 6 + BLE 5.2 |
+| [**PKE8713ECM-VA4-N43**](https://aiot.realmcu.com/zh/center/hardware/detail/52) | RTL8713E | ARM Cortex-M33 @ 400 MHz + RISC-V (KR4) + HiFi5 audio DSP | 768 KB | 32 MB | Wi-Fi 6 + BLE 5.2 |
 
 ## Quick start (clean machine)
 
@@ -96,10 +87,11 @@ pio run
 ```
 
 First-time build downloads:
-- The Ameba **base SDK** (~30 MB shallow clone — Wi-Fi + BT, no submodules)
+- The Ameba **base SDK** (~100 MB shallow clone, ~440 MB on disk — Wi-Fi + BT, no submodules)
 - The asdk/vsdk toolchain (~280 MB per family) into `~/rtk-toolchain/`
 
-Cold first build: ~5 minutes. After that incremental builds: ~15 seconds.
+Cold first build: ~10 minutes (SDK clone + toolchain download dominate;
+varies with network speed). After that incremental builds: ~15 seconds.
 
 Need the high-level **XDK** features (AI voice, TensorFlow Lite, UI/LVGL,
 audio)? Set `AMEBA_SDK_EDITION=xdk` **before the first build** — see
@@ -150,7 +142,7 @@ Realtek splits ameba-rtos into two editions:
 
 | Edition | Contents | First-time download |
 |---|---|---|
-| **SDK** (default) | Wi-Fi, Bluetooth — the base development platform | ~30 MB |
+| **SDK** (default) | Wi-Fi, Bluetooth — the base development platform | ~100 MB (≈440 MB on disk) |
 | **XDK** (extended) | Everything in SDK **plus** AI voice, TensorFlow Lite (tflite_micro), UI (LVGL), audio | ~1.1 GB |
 
 Most projects only need the base SDK, so it is cloned by default. To get the

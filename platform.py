@@ -16,8 +16,8 @@ Strategy:
 2. Toolchain is downloaded by the upstream SDK on first `ameba.py build`.
 3. `builder/main.py` shells out to `ameba.py build` for the selected SoC.
 
-We handle the framework fetch internally (skipping heavy submodules like 
-audio/ui/lvgl) to keep the initial download around ~30MB.
+We handle the framework fetch internally (skipping heavy submodules like
+audio/ui/lvgl) to keep the initial download around ~100 MB (~440 MB on disk).
 """
 
 import json
@@ -42,7 +42,8 @@ DEFAULT_SDK_BRANCH = "master"
 DEFAULT_SDK_DEPTH = 5
 
 # Realtek splits the upstream into two editions (per the official docs):
-#   - "sdk"  (default): base SDK — Wi-Fi + BT, no submodules (~30 MB).
+#   - "sdk"  (default): base SDK — Wi-Fi + BT, no submodules
+#            (~100 MB download, ~440 MB on disk).
 #   - "xdk"  (extended): adds the AI-voice / tflite_micro / UI(lvgl) / audio /
 #            speechmind submodules for high-level features (~1.1 GB).
 # Most users only need the base SDK, so it is the default. Opt into the
@@ -286,8 +287,8 @@ class RealtekamebaPlatform(PlatformBase):
             sys.stderr.write(
                 f"[realtek-ameba] First-time setup: cloning {sdk_url} "
                 f"(branch={sdk_branch}, edition=SDK, no submodules) to {pkg_dir}\n"
-                f"[realtek-ameba] This is a one-time ~30 MB download, "
-                f"typically 2-5 minutes. For AI / tflite / UI / audio features, "
+                f"[realtek-ameba] This is a one-time ~100 MB download "
+                f"(~440 MB on disk), typically 5-10 minutes. For AI / tflite / UI / audio features, "
                 f"set $AMEBA_SDK_EDITION=xdk before the first build.\n"
             )
         clone_args += [sdk_url, pkg_dir]

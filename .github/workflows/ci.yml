@@ -63,7 +63,7 @@ jobs:
   # same cache across all 3 boards. Without this, each matrix job would
   # cold-clone the SDK + per-SoC toolchain independently.
   #
-  # CI verifies the BASE SDK only (AMEBA_SDK_EDITION=sdk, ~30 MB). A cold run
+  # CI verifies the BASE SDK only (AMEBA_SDK_EDITION=sdk, ~100 MB download / ~440 MB on disk). A cold run
   # is ~5 min for the SDK plus the per-family toolchains, but only ONCE per
   # platform.json/platform.py change. Subsequent matrix jobs hit the cache
   # in seconds. The ~1.1 GB XDK edition (AI / tflite / UI / audio) will get
