@@ -195,3 +195,52 @@ jobs:
               fi
             done
           fi
+
+  # =========================================================================
+  # Layer 2c: compile every shipped example (keeps examples/ from rotting).
+  #
+  # Reuses the SDK + toolchain cache populated by prefetch, so each example
+  # is a warm build (~60s). One matrix entry per example; `pio run -d`
+  # builds every env declared in that example's platformio.ini.
+  # =========================================================================
+  examples:
+    name: Example build (${{ matrix.example }})
+    runs-on: ubuntu-latest
+    needs: prefetch
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - ameba-blink
+          - ameba-wifi-connect
+          - ameba-mqtt
+          - ameba-http-client
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO Core
+        run: pip install --quiet --upgrade platformio
+
+      - name: Install platform globally
+        run: pio pkg install -g -p "file://$GITHUB_WORKSPACE"
+
+      - name: Restore SDK + toolchain cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/packages/framework-ameba-rtos
+            ~/rtk-toolchain
+          key: ameba-sdk-toolchain-${{ hashFiles('platform.json', 'platform.py') }}
+          restore-keys: |
+            ameba-sdk-toolchain-
+
+      - name: Build example
+        env:
+          # Base SDK only (matches prefetch); XDK gets its own job later.
+          AMEBA_SDK_EDITION: sdk
+        run: pio run -d "examples/${{ matrix.example }}"
