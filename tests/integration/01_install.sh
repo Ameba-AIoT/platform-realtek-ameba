@@ -146,8 +146,8 @@ if ! grep -q "user_main()" "$PROJ/src/main.c"; then
     echo "❌ T01: src/main.c starter doesn't mention user_main"
     exit 1
 fi
-if ! grep -q "MUST RETURN" "$PROJ/src/main.c"; then
-    echo "❌ T01: src/main.c starter missing 'MUST RETURN' user_main hint"
+if ! grep -q "its own" "$PROJ/src/main.c"; then
+    echo "❌ T01: src/main.c starter missing 'runs on its own task' user_main hint"
     exit 1
 fi
 echo "  ✓ src/main.c starter has user_main hint"
