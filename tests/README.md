@@ -13,6 +13,34 @@ Layers 1+2 run on every push/PR via GitHub Actions
 (`.github/workflows/ci.yml`). Layer 3 is for the platform author
 to spot-check before tagging a release.
 
+## One-stop runner
+
+```bash
+./tests/run.sh            # lint + unit + integration  (everything CI runs)
+./tests/run.sh unit       # just the fast mock tests
+./tests/run.sh hw         # hardware-in-the-loop smoke (needs a board)
+TEST_BOARDS=pke8721daf-c13-f10 ./tests/run.sh integration   # one board only
+```
+
+`SUITE` ∈ `lint | unit | integration | hw | ci | all` (default `ci`).
+
+## What runs where — CI vs local
+
+The rule: **anything that only compiles, parses, or writes files can run on
+CI; anything that talks to a real board over a serial port (flash / erase /
+monitor / debug) must run locally** — GitHub runners have no hardware.
+
+| Layer | Runs on CI? | Why |
+|-------|-------------|-----|
+| lint | ✅ | pure static checks, no deps |
+| unit (mock) | ✅ | `subprocess` is mocked; never touches a board or the SDK |
+| integration (install / build / clean / buildfs …) | ✅ | only clones the SDK and **compiles / generates images** — no flashing |
+| hw smoke (upload / erase / uploadfs / monitor / debug) | ❌ **local only** | needs a real board on `/dev/ttyUSB*` (usbipd in WSL) + manual reset |
+
+> `buildfs` (building the LittleFS *image*) is CI-safe; only `uploadfs`
+> (writing it to the chip) needs hardware. Likewise the erase **fail-detection
+> logic** is unit-tested with a mock (CI), while an actual `erase` is local.
+
 ## Run locally
 
 ### Layer 1 — lint (anyone, anywhere)
@@ -90,11 +118,29 @@ tests/
 More tests will arrive as Phase B / Phase C of the regression plan
 ships (see `.hermes/plans/2026-06-03_ci-regression-tests.md`).
 
-## What each test prevents
+## Test roadmap (full plan)
 
-| ID  | Bug it prevents                                                   | Test type   |
-|-----|--------------------------------------------------------------------|-------------|
-| T07 | erase silently passes when board not in download mode             | unit (mock) |
-| T01 | `pio platform install` doesn't trigger SDK + venv + auto-skeleton | integration |
+Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 
-(More rows to come as we ship Phase B / C.)
+| ID  | What it covers                                            | Type        | Where | Status |
+|-----|-----------------------------------------------------------|-------------|-------|--------|
+| —   | Python syntax / JSON / board-manifest fields              | lint        | CI    | ✅ |
+| T07 | erase silently "passes" when board not in download mode   | unit (mock) | CI    | ✅ |
+| T06 | `uploadfs` argv (exclusive end addr)                      | unit (mock) | CI    | ⬜ |
+| T11 | `upload` extra-image end-addr off-by-one boundary         | unit (mock) | CI    | ⬜ |
+| T08 | `pio check` metadata parsed from compile_commands.json    | unit (mock) | CI    | ⬜ |
+| T09 | SDK venv sha256-stamp idempotency                         | unit (mock) | CI    | ⬜ |
+| T04 | `clean` hook wipes extern build dir                       | unit (mock) | CI    | ⬜ |
+| —   | `_find_sdk_dir` / active-SDK resolution                   | unit (mock) | CI    | ⬜ |
+| T01 | `pio platform install` → SDK + venv + auto-skeleton       | integration | CI    | ✅ |
+| —   | every shipped `examples/ameba-*` compiles                 | integration | CI    | ✅ |
+| T02 | auto-skeleton + first build produces firmware.elf         | integration | CI    | ⬜ |
+| T03 | incremental rebuild is a no-op                            | integration | CI    | ⬜ |
+| T04 | `clean` removes build_RTL*/ + compile_commands.json       | integration | CI    | ⬜ |
+| T05 | `buildfs` image round-trips the contents of `data/`       | integration | CI    | ⬜ |
+| T09 | editing requirements.txt re-syncs the venv                | integration | CI    | ⬜ |
+| T10 | SDK upgrade re-syncs the venv                             | integration | CI    | ⬜ |
+| T12 | invalid inputs fail cleanly                               | integration | CI    | ⬜ |
+| HW  | upload / erase / uploadfs / monitor / debug on a board    | hw smoke    | local | ⬜ |
+
+Full design notes live in `doc/2026-06-03_ci-regression-tests.md` (local).
