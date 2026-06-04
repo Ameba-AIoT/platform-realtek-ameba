@@ -245,6 +245,12 @@ jobs:
       - name: Install build tools (PlatformIO + ninja)
         run: pip install --quiet --upgrade platformio ninja
 
+      # The SDK fetches its toolchain with wget and unpacks it with 7z.
+      # Linux runners ship wget + tar; Windows ships neither, so install them.
+      - name: Install Windows toolchain-fetch deps (wget + 7zip)
+        if: runner.os == 'Windows'
+        run: choco install --no-progress -y wget 7zip
+
       - name: Install platform globally
         shell: bash
         run: pio pkg install -g -p "symlink://."

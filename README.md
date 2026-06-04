@@ -272,10 +272,16 @@ tests/                     Regression suite (lint + unit + integration)
 
 ## Requirements
 
-- Linux (tested on Ubuntu / WSL2)
+- **Host OS**: Linux (Ubuntu / WSL2) — primary, fully tested. Windows is
+  supported (CI coverage in progress). macOS is **not** supported — the
+  upstream SDK ships no macOS toolchain.
 - Python 3.9+
 - PlatformIO Core 6.x
-- A working clone of `ameba-rtos` is fetched automatically on first build
+- The `ameba-rtos` SDK + toolchain are fetched automatically on first build.
+  - **Windows only**: the SDK downloads its toolchain with `wget` and unpacks
+    it with `7z`, and Windows ships neither. Install both first, e.g.
+    `choco install wget 7zip` (or scoop / winget). Linux already has
+    `wget` + `tar`, so nothing extra is needed there.
 
 ## Testing
 
