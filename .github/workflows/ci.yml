@@ -64,6 +64,8 @@ jobs:
         # collision. (Importing pytest pulls in stdlib `platform`, which
         # python's resolution finds our platform.py first if cwd is repo root.)
         shell: bash
+        env:
+          PYTHONUTF8: "1"  # belt-and-suspenders for Windows cp1252 default
         run: |
           cd tests
           python -m pytest unit/ -v

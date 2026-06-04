@@ -97,7 +97,9 @@ def isolated_main(monkeypatch, tmp_path):
         return mod._run_ameba_flash, fake_env
 
     # Fallback: parse source and exec _run_ameba_flash in isolation.
-    with open(os.path.join(REPO_ROOT, "builder", "main.py")) as fh:
+    # encoding is explicit: builder/main.py contains UTF-8 box-drawing/dash
+    # chars, and Windows' default cp1252 codec can't decode them.
+    with open(os.path.join(REPO_ROOT, "builder", "main.py"), encoding="utf-8") as fh:
         src = fh.read()
 
     # Crude function extraction by AST parse to avoid relying on text patterns
