@@ -69,7 +69,7 @@ pio project init --board pke8721daf-c13-f10 \
 | 自动生成的文件 | 作用 |
 |---|---|
 | `src/main.c` | 定义 **`user_main()`** 的起手模板 —— 你的入口,改这个 |
-| `app_example/app_main.c` | SDK 入口 `app_example()`,仅转调 `user_main()` |
+| `app_example/app_main.c` | SDK 入口 `app_example()`,在独立 RTOS 任务里运行 `user_main()`,因此你代码里的 `while(1)` 不会卡住启动 |
 | `app_example/CMakeLists.txt` + 根 `CMakeLists.txt` | 把 `src/` 里的所有源码注册进 SDK 构建 |
 
 丢进 `src/` 的任何 `.c`/`.cpp` 都会被自动编译 —— 你只需要动 `src/`。

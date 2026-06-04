@@ -24,7 +24,7 @@ ameba-foo/
 ├── CMakeLists.txt              # ameba_add_subdirectory(app_example)
 ├── app_example/
 │   ├── CMakeLists.txt          # registers sources; add include dirs here
-│   └── app_main.c              # SDK entry: app_example() -> user_main()
+│   └── app_main.c              # SDK entry: runs user_main() on its own task
 └── src/                        # YOUR code — auto-bridged into the build
     ├── main.c                  # defines user_main()
     └── ...

@@ -21,7 +21,7 @@ ameba-foo/
 ├── CMakeLists.txt              # ameba_add_subdirectory(app_example)
 ├── app_example/
 │   ├── CMakeLists.txt          # 注册源文件；额外 include 目录加在这里
-│   └── app_main.c              # SDK 入口：app_example() -> user_main()
+│   └── app_main.c              # SDK 入口：在独立任务里运行 user_main()
 └── src/                        # 你的代码 —— 自动桥接进构建
     ├── main.c                  # 定义 user_main()
     └── ...

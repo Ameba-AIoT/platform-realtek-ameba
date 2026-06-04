@@ -71,7 +71,7 @@ Ameba glue so the build works out of the box (you never write it by hand):
 | Auto-generated file | Role |
 |---|---|
 | `src/main.c` | Starter that defines **`user_main()`** — your entry point. Edit this. |
-| `app_example/app_main.c` | SDK entry `app_example()`; just delegates to `user_main()` |
+| `app_example/app_main.c` | SDK entry `app_example()`; runs `user_main()` on its own RTOS task, so a `while(1)` in your code never blocks boot |
 | `app_example/CMakeLists.txt` + root `CMakeLists.txt` | Register everything in `src/` into the SDK build |
 
 Any `.c`/`.cpp` you drop into `src/` is auto-compiled — you only ever touch
