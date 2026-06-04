@@ -53,6 +53,39 @@ pio pkg install -g -p "file://$(pwd)/platform-realtek-ameba"
 
 ### 3. 创建项目
 
+三种方式任选其一：
+
+**方式 A — 用 `pio project init` 脚手架（推荐）。** 为指定板子生成项目：
+
+```bash
+mkdir my-ameba-app && cd my-ameba-app
+pio project init --board pke8721daf-c13-f10 \
+    --project-option "framework=ameba-rtos"
+```
+
+这会生成 `platformio.ini` 以及标准的 `src/`、`include/`、`lib/`、`test/` 骨架。
+**首次 `pio run`** 时,平台会自动生成 Ameba 所需的胶水文件,开箱即用(你不用手写):
+
+| 自动生成的文件 | 作用 |
+|---|---|
+| `src/main.c` | 定义 **`user_main()`** 的起手模板 —— 你的入口,改这个 |
+| `app_example/app_main.c` | SDK 入口 `app_example()`,仅转调 `user_main()` |
+| `app_example/CMakeLists.txt` + 根 `CMakeLists.txt` | 把 `src/` 里的所有源码注册进 SDK 构建 |
+
+丢进 `src/` 的任何 `.c`/`.cpp` 都会被自动编译 —— 你只需要动 `src/`。
+(`app_example/` 这层桥接的原因见 [目录结构](#layout)。)
+
+**方式 B — 从现成 example 起步。** 从 `examples/` 拷一个完整项目(Wi-Fi、MQTT…)——
+见 [`examples/README_zh.md`](examples/README_zh.md):
+
+```bash
+git clone https://github.com/Ameba-AIoT/platform-realtek-ameba.git
+cp -r platform-realtek-ameba/examples/ameba-wifi-connect my-ameba-app
+cd my-ameba-app   # 然后改 src/、pio run
+```
+
+**方式 C — 手写 `platformio.ini`:**
+
 ```bash
 mkdir my-ameba-app && cd my-ameba-app
 cat > platformio.ini <<'EOF'
@@ -75,7 +108,7 @@ board        = pke8721daf-c13-f10
 EOF
 ```
 
-> **可选板子**（替换上面的 `pke8721daf-c13-f10`）：
+> **可选板子**（作为 `--board` 值或 `board =` 的值）：
 > - `pke8721daf-c13-f10` — RTL8721Dx（最常见的开发板）
 > - `pke8710ecf-c53-f20` — RTL8710E
 > - `pke8713ecm-va4-n43` — RTL8713E

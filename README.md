@@ -53,6 +53,41 @@ pio pkg install -g -p "file://$(pwd)/platform-realtek-ameba"
 
 ### 3. Create a project
 
+Pick whichever you prefer:
+
+**Option A — scaffold with `pio project init` (recommended).** Generates a
+project wired to a specific board:
+
+```bash
+mkdir my-ameba-app && cd my-ameba-app
+pio project init --board pke8721daf-c13-f10 \
+    --project-option "framework=ameba-rtos"
+```
+
+This writes `platformio.ini` plus the standard `src/`, `include/`, `lib/`,
+`test/` skeleton. On your **first `pio run`** the platform auto-generates the
+Ameba glue so the build works out of the box (you never write it by hand):
+
+| Auto-generated file | Role |
+|---|---|
+| `src/main.c` | Starter that defines **`user_main()`** — your entry point. Edit this. |
+| `app_example/app_main.c` | SDK entry `app_example()`; just delegates to `user_main()` |
+| `app_example/CMakeLists.txt` + root `CMakeLists.txt` | Register everything in `src/` into the SDK build |
+
+Any `.c`/`.cpp` you drop into `src/` is auto-compiled — you only ever touch
+`src/`. (See [Layout](#layout) for why the `app_example/` bridge exists.)
+
+**Option B — start from a ready-made example.** Copy a complete project
+(Wi-Fi, MQTT, …) out of `examples/` — see [`examples/README.md`](examples/README.md):
+
+```bash
+git clone https://github.com/Ameba-AIoT/platform-realtek-ameba.git
+cp -r platform-realtek-ameba/examples/ameba-wifi-connect my-ameba-app
+cd my-ameba-app   # then edit src/, pio run
+```
+
+**Option C — hand-write `platformio.ini`:**
+
 ```bash
 mkdir my-ameba-app && cd my-ameba-app
 cat > platformio.ini <<'EOF'
@@ -75,7 +110,7 @@ board        = pke8721daf-c13-f10
 EOF
 ```
 
-> **Available boards** (replace `pke8721daf-c13-f10` above):
+> **Available boards** (use as `--board` value or the `board =` key):
 > - `pke8721daf-c13-f10` — RTL8721Dx (most common dev board)
 > - `pke8710ecf-c53-f20` — RTL8710E
 > - `pke8713ecm-va4-n43` — RTL8713E
