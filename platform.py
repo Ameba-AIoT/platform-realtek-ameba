@@ -408,9 +408,10 @@ class RealtekamebaPlatform(PlatformBase):
 
         # Build pip install args. Use --upgrade so existing deps get bumped
         # to the new version when SDK updates ship a tighter pin.
-        # Use a domestic pip mirror by default for China-locale users (where
-        # pypi.org timeouts are common). Override with $PIP_INDEX_URL upstream
-        # if you want pypi.org or a private mirror.
+        # No index is forced: pip follows the user's own configuration
+        # (pip.conf / $PIP_INDEX_URL), matching the upstream SDK's behavior.
+        # Behind a slow link, set a mirror via `pip config set global.index-url`
+        # or $PIP_INDEX_URL.
         pip_args = [
             venv_pip,
             "install",
@@ -419,11 +420,6 @@ class RealtekamebaPlatform(PlatformBase):
             "-r",
             requirements,
         ]
-        if not os.environ.get("PIP_INDEX_URL"):
-            pip_args[2:2] = [
-                "-i",
-                "https://pypi.tuna.tsinghua.edu.cn/simple",
-            ]
         try:
             subprocess.check_call(pip_args)
         except subprocess.CalledProcessError as exc:
