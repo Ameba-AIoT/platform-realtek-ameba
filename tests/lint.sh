@@ -12,6 +12,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Force Python UTF-8 mode so inline scripts can print ✓ / ❌ on Windows,
+# where the default stdout codec (cp1252) can't encode U+2713 and friends.
+export PYTHONUTF8=1
+
 echo "=== lint: Python syntax ==="
 for f in platform.py builder/main.py builder/frameworks/*.py; do
     python3 -m py_compile "$f"
