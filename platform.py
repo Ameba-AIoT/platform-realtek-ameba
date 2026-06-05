@@ -99,6 +99,13 @@ class RealtekamebaPlatform(PlatformBase):
         # update --init component/audio`` (or similar) on demand.
         sdk_dir = self._ensure_ameba_rtos_package()
 
+        # Fetch the prebuilt build tools (cmake/ninja/ccache; wget+7z on
+        # Windows) the way env.sh/env.bat would. The PlatformIO flow never
+        # sources those scripts, and on Windows the SDK's toolchain download
+        # needs the bundled wget/7z, so we must provide them. Version + URLs
+        # come from the SDK's own env.sh so a prebuilts bump tracks the SDK.
+        self._ensure_prebuilts(sdk_dir)
+
         # ALWAYS resync the SDK's Python venv against the current
         # tools/requirements.txt — separate concern from "is the SDK
         # cloned?". This runs on every `pio run` (it's idempotent: hash
@@ -207,6 +214,147 @@ class RealtekamebaPlatform(PlatformBase):
                     os.remove(stale)
                 except OSError:
                     pass
+
+    def _ensure_prebuilts(self, sdk_dir):
+        """Download the prebuilt build tools the SDK expects on PATH.
+
+        These bundle cmake / ninja / ccache, and on Windows also wget + 7z
+        (which the SDK's cmake uses to fetch + unpack the cross toolchain).
+        env.sh / env.bat normally fetch them, but the PlatformIO flow never
+        sources those, so we replicate it here in pure Python (urllib +
+        zipfile/tarfile) — no external tool needed, so a bare Windows host
+        with no wget/7z can still bootstrap.
+
+        The version and URLs are read straight out of the SDK's own
+        ``env.sh`` (its PREBUILTS_* variables), so when the SDK bumps the
+        prebuilts version we follow automatically — nothing is pinned here.
+
+        Idempotent: skips if already extracted. Best-effort: on failure it
+        warns and lets the build fall back to system tools (fine on Linux;
+        on Windows the SDK will then report the missing wget).
+        """
+        import re
+        import stat
+        import tarfile
+        import urllib.request
+        import zipfile
+
+        # Pull the prebuilts URL straight out of the SDK's env scripts, but
+        # match the stable release-artifact pattern (prebuilts-{win,linux}-
+        # <ver>.{zip,tar.gz}) rather than any specific shell variable name —
+        # an env.sh/env.bat refactor in the SDK then won't break us; only a
+        # change to the artifact naming (a public release contract) would.
+        # We scan both env.sh and env.bat as mutual fallbacks.
+        host_token = "prebuilts-win" if IS_WINDOWS else "prebuilts-linux"
+        ext = ".zip" if IS_WINDOWS else ".tar.gz"
+
+        text = ""
+        for script in ("env.sh", "env.bat"):
+            path = os.path.join(sdk_dir, script)
+            if os.path.isfile(path):
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    text += fh.read() + "\n"
+        if not text:
+            return  # unfamiliar SDK layout — leave it to the SDK's own tooling
+
+        candidates = [
+            u
+            for u in re.findall(r"https?://[^\s'\"]+", text)
+            if host_token in u and u.endswith(ext)
+        ]
+        # Dedupe (stable order), preferring GitHub over the mirror; an
+        # explicit override wins outright.
+        ordered, seen = [], set()
+        for u in sorted(candidates, key=lambda x: 0 if "github" in x else 1):
+            if u not in seen:
+                seen.add(u)
+                ordered.append(u)
+        override = os.environ.get("AMEBA_PREBUILTS_URL")
+        urls = [override] if override else ordered
+        if not urls:
+            return  # no prebuilts URL found — defer to the SDK's own tooling
+
+        archive = os.path.basename(urls[0])  # e.g. prebuilts-win-1.0.3.zip
+        name = archive
+        for suffix in (".tar.gz", ".tgz", ".zip"):
+            if name.endswith(suffix):
+                name = name[: -len(suffix)]
+                break
+
+        toolchain_dir = os.environ.get("RTK_TOOLCHAIN_DIR") or os.path.expanduser(
+            "~/rtk-toolchain"
+        )
+        dest = os.path.join(toolchain_dir, name)
+        setenv = "setenv.bat" if IS_WINDOWS else "setenv.sh"
+        if os.path.isfile(os.path.join(dest, setenv)):
+            return  # already installed
+
+        os.makedirs(toolchain_dir, exist_ok=True)
+        archive_path = os.path.join(toolchain_dir, archive)
+
+        sys.stderr.write(
+            f"[realtek-ameba] fetching build tools ({archive}, one-time)\n"
+        )
+        downloaded = False
+        for url in urls:
+            try:
+                with urllib.request.urlopen(url, timeout=180) as resp, open(
+                    archive_path, "wb"
+                ) as fh:
+                    shutil.copyfileobj(resp, fh)
+                downloaded = True
+                break
+            except Exception as exc:  # noqa: BLE001 — try next mirror
+                sys.stderr.write(f"[realtek-ameba]   {url} -> {exc}\n")
+
+        if not downloaded:
+            tail = (
+                " (wget/7z; Windows builds will fail without them)\n"
+                if IS_WINDOWS
+                else "\n"
+            )
+            sys.stderr.write(
+                "[realtek-ameba] WARNING: could not download prebuilts; "
+                "falling back to system cmake/ninja" + tail
+            )
+            return
+
+        try:
+            if archive.endswith(".zip"):
+                with zipfile.ZipFile(archive_path) as zf:
+                    zf.extractall(toolchain_dir)
+            else:
+                with tarfile.open(archive_path, "r:gz") as tf:
+                    tf.extractall(toolchain_dir)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[realtek-ameba] WARNING: failed to unpack prebuilts: {exc}\n"
+            )
+            return
+        finally:
+            try:
+                os.remove(archive_path)
+            except OSError:
+                pass
+
+        # zip drops the unix executable bit; restore it for bundled binaries.
+        if not IS_WINDOWS:
+            for sub in ("bin", os.path.join("cmake", "bin")):
+                bindir = os.path.join(dest, sub)
+                if not os.path.isdir(bindir):
+                    continue
+                for entry in os.listdir(bindir):
+                    fp = os.path.join(bindir, entry)
+                    if os.path.isfile(fp):
+                        os.chmod(
+                            fp,
+                            os.stat(fp).st_mode
+                            | stat.S_IEXEC
+                            | stat.S_IXGRP
+                            | stat.S_IXOTH,
+                        )
+
+        sys.stderr.write(f"[realtek-ameba] build tools ready at {dest}\n")
 
     def _ensure_ameba_rtos_package(self):
         """Clone ameba-rtos into the PIO package cache if not already there.

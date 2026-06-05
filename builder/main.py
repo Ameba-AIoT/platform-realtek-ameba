@@ -89,12 +89,12 @@ def _find_prebuilts_dir():
     """Locate the ameba prebuilts (cmake/ninja/ccache).
 
     The SDK ships these per host OS: ``prebuilts-linux-*`` on Linux,
-    ``prebuilts-windows-*`` on Windows. We glob so the version suffix
+    ``prebuilts-win-*`` on Windows. We glob so the version suffix
     doesn't need hardcoding, and key off the matching setenv script.
     """
     import glob
     setenv = "setenv.bat" if IS_WINDOWS else "setenv.sh"
-    pattern = "prebuilts-windows*" if IS_WINDOWS else "prebuilts-linux*"
+    pattern = "prebuilts-win*" if IS_WINDOWS else "prebuilts-linux*"
     globbed = sorted(
         glob.glob(os.path.expanduser(join("~/rtk-toolchain", pattern))),
         reverse=True,
