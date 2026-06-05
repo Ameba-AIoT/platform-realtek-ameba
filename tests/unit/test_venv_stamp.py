@@ -57,7 +57,11 @@ def _make_sdk(tmp_path, reqs="json5\npyelftools\n", venv_python=True, stamp=None
     """Lay out a fake SDK dir: tools/requirements.txt, optional .venv python,
     optional stamp file. Returns the sdk dir path (str)."""
     (tmp_path / "tools").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "tools" / "requirements.txt").write_text(reqs)
+    # write_bytes (not write_text): on Windows write_text translates \n -> \r\n,
+    # which would change the file's sha256 vs _sha(reqs) and break the stamp
+    # comparison. The real requirements.txt and its stamp hash the same bytes,
+    # so this just keeps the fixture faithful cross-platform.
+    (tmp_path / "tools" / "requirements.txt").write_bytes(reqs.encode())
     if venv_python:
         bindir = tmp_path / ".venv" / "bin"
         bindir.mkdir(parents=True, exist_ok=True)
