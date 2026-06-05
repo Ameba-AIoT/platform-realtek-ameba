@@ -138,10 +138,10 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 | U06 | `unit/test_clean_hook.py`         | clean artifact list covers build dir, spares source     | CI    | ✅ |
 | U07 | `unit/test_resolve_sdk_dir.py`    | `_find_sdk_dir` lookup priority + not-found error       | CI    | ✅ |
 | I01 | `integration/01_install.sh`       | `pio platform install` → SDK + venv + auto-skeleton     | CI    | ✅ |
-| I02 | `integration/02_first_build.sh`   | auto-skeleton + first build produces firmware.elf       | CI    | ⬜ |
-| I03 | `integration/03_incremental.sh`   | incremental rebuild is a no-op                          | CI    | ⬜ |
+| I02 | `integration/02_first_build.sh`   | multi-file src/ bridged + compiled → firmware.elf       | CI    | ✅ |
+| I03 | `integration/03_incremental.sh`   | 2nd build reuses SDK+venv, keeps user-edited skeleton   | CI    | ✅ |
 | I04 | `integration/04_clean.sh`         | `clean` removes build_RTL*/ + compile_commands.json     | CI    | ✅ |
-| I05 | `integration/05_buildfs.sh`       | `buildfs` image round-trips the contents of `data/`     | CI    | ⬜ |
+| I05 | `integration/05_buildfs.sh`       | `buildfs` packs data/ into a partition-sized LittleFS   | CI    | ✅ |
 | I06 | `integration/06_examples.sh`      | every shipped `examples/ameba-*` compiles               | CI    | ✅* |
 | I07 | `integration/07_venv_resync.sh`   | editing requirements.txt re-syncs the venv              | CI    | ⬜ |
 | I08 | `integration/08_sdk_upgrade.sh`   | SDK upgrade re-syncs the venv                           | CI    | ⬜ |

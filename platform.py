@@ -560,11 +560,18 @@ class RealtekamebaPlatform(PlatformBase):
         # (pip.conf / $PIP_INDEX_URL), matching the upstream SDK's behavior.
         # Behind a slow link, set a mirror via `pip config set global.index-url`
         # or $PIP_INDEX_URL.
+        #
+        # setuptools<81 is pinned because the SDK's vfs.py (used by buildfs/
+        # uploadfs via the `fs`/pyfatfs packages) imports `pkg_resources`,
+        # which setuptools removed in 81+, and Python 3.12 venvs no longer
+        # ship setuptools at all — without this, `pio run -t buildfs` dies
+        # with "No module named 'pkg_resources'".
         pip_args = [
             venv_pip,
             "install",
             "--quiet",
             "--upgrade",
+            "setuptools<81",
             "-r",
             requirements,
         ]
