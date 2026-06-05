@@ -131,12 +131,12 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 |-----|-----------------------------------|---------------------------------------------------------|-------|--------|
 | —   | `lint.sh`                         | Python syntax / JSON / board-manifest fields            | CI    | ✅ |
 | U01 | `unit/test_erase_fail.py`         | erase silently "passes" when board not in download mode | CI    | ✅ |
-| U02 | `unit/test_uploadfs_argv.py`      | `uploadfs` argv (exclusive end addr)                    | CI    | ⬜ |
-| U03 | `unit/test_upload_endaddr.py`     | `upload` extra-image end-addr off-by-one boundary       | CI    | ⬜ |
-| U04 | `unit/test_check_metadata.py`     | `pio check` metadata parsed from compile_commands.json  | CI    | ⬜ |
-| U05 | `unit/test_venv_stamp.py`         | SDK venv sha256-stamp idempotency                       | CI    | ⬜ |
-| U06 | `unit/test_clean_hook.py`         | `clean` hook wipes extern build dir                     | CI    | ⬜ |
-| U07 | `unit/test_resolve_sdk_dir.py`    | `_find_sdk_dir` / active-SDK resolution                 | CI    | ⬜ |
+| U02 | `unit/test_uploadfs_argv.py`      | `_ameba_py_args` argv (image triples → `-i` groups)     | CI    | ✅ |
+| U03 | `unit/test_upload_endaddr.py`     | VFS region end-addr off-by-one (inclusive→exclusive)    | CI    | ✅ |
+| U04 | `unit/test_check_metadata.py`     | `pio check` metadata parsed from compile_commands.json  | CI    | ✅ |
+| U05 | `unit/test_venv_stamp.py`         | SDK venv sha256-stamp idempotency                       | CI    | ✅ |
+| U06 | `unit/test_clean_hook.py`         | `clean` hook wipes extern build dir                     | CI    | ⛔† |
+| U07 | `unit/test_resolve_sdk_dir.py`    | `_find_sdk_dir` lookup priority + not-found error       | CI    | ✅ |
 | I01 | `integration/01_install.sh`       | `pio platform install` → SDK + venv + auto-skeleton     | CI    | ✅ |
 | I02 | `integration/02_first_build.sh`   | auto-skeleton + first build produces firmware.elf       | CI    | ⬜ |
 | I03 | `integration/03_incremental.sh`   | incremental rebuild is a no-op                          | CI    | ⬜ |
@@ -154,5 +154,10 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 
 \* I06 currently runs as its own `examples` CI job; it will be folded into the
 integration matrix as `06_examples.sh`.
+
+† U06 is blocked: there is no `clean` hook in `builder/main.py` yet —
+`pio run -t clean` does not remove `build_RTL*/` or the root
+`compile_commands.json`. The test lands once that feature is implemented
+(tracked separately).
 
 Full design notes live in `doc/2026-06-03_ci-regression-tests.md` (local).
