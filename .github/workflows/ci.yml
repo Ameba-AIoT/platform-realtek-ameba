@@ -160,7 +160,9 @@ jobs:
           - pke8713ecm-va4-n43
         test:
           - 01_install
-        # As Phase A graduates we add: 02_first_build, 04_clean, 05_buildfs, ...
+          - 04_clean
+        # More integration scripts get added here as they land:
+        # 02_first_build, 03_incremental, 05_buildfs, 07_venv_resync, ...
     steps:
       - uses: actions/checkout@v4
 

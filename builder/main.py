@@ -1482,8 +1482,32 @@ def run_menuconfig(*_args, **_kwargs):
 # -----------------------------------------------------------------------------
 # Wire up SCons targets
 # -----------------------------------------------------------------------------
+def _clean_artifact_paths():
+    """Platform-generated build artifacts that `pio run -t clean` removes.
+
+    PIO's built-in clean only wipes ``.pio/build/``; our SDK build lands in
+    ``PROJECT_DIR/build_<SOC>/`` plus a few sidecar files it never touches.
+    User source and the auto-generated skeleton (``src/``, ``app_main.c``,
+    ``CMakeLists.txt``) are deliberately NOT included — clean must not nuke
+    the user's code.
+    """
+    return [
+        EXTERN_BUILD_DIR,
+        join(PROJECT_DIR, "compile_commands.json"),
+        join(PROJECT_DIR, "soc_info.json"),
+        join(PROJECT_DIR, "app_example", "_pio_src_fragment.cmake"),
+    ]
+
+
 target_firmware = env.Alias("buildprog", None, build_firmware)
 AlwaysBuild(target_firmware)
+
+# `pio run -t clean` makes PIO run SCons in --clean mode (see
+# platformio/platform/_run.py, which appends --clean for KNOWN_CLEAN_TARGETS).
+# SCons --clean removes the default target's outputs PLUS anything registered
+# via env.Clean(). PIO only knows about .pio/build/; our outputs live under
+# PROJECT_DIR/build_<SOC>/ with sidecar files, so register them here.
+env.Clean(target_firmware, _clean_artifact_paths())
 
 target_upload = env.Alias(
     "upload",

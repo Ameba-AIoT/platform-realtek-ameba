@@ -135,12 +135,12 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 | U03 | `unit/test_upload_endaddr.py`     | VFS region end-addr off-by-one (inclusive→exclusive)    | CI    | ✅ |
 | U04 | `unit/test_check_metadata.py`     | `pio check` metadata parsed from compile_commands.json  | CI    | ✅ |
 | U05 | `unit/test_venv_stamp.py`         | SDK venv sha256-stamp idempotency                       | CI    | ✅ |
-| U06 | `unit/test_clean_hook.py`         | `clean` hook wipes extern build dir                     | CI    | ⛔† |
+| U06 | `unit/test_clean_hook.py`         | clean artifact list covers build dir, spares source     | CI    | ✅ |
 | U07 | `unit/test_resolve_sdk_dir.py`    | `_find_sdk_dir` lookup priority + not-found error       | CI    | ✅ |
 | I01 | `integration/01_install.sh`       | `pio platform install` → SDK + venv + auto-skeleton     | CI    | ✅ |
 | I02 | `integration/02_first_build.sh`   | auto-skeleton + first build produces firmware.elf       | CI    | ⬜ |
 | I03 | `integration/03_incremental.sh`   | incremental rebuild is a no-op                          | CI    | ⬜ |
-| I04 | `integration/04_clean.sh`         | `clean` removes build_RTL*/ + compile_commands.json     | CI    | ⬜ |
+| I04 | `integration/04_clean.sh`         | `clean` removes build_RTL*/ + compile_commands.json     | CI    | ✅ |
 | I05 | `integration/05_buildfs.sh`       | `buildfs` image round-trips the contents of `data/`     | CI    | ⬜ |
 | I06 | `integration/06_examples.sh`      | every shipped `examples/ameba-*` compiles               | CI    | ✅* |
 | I07 | `integration/07_venv_resync.sh`   | editing requirements.txt re-syncs the venv              | CI    | ⬜ |
@@ -154,10 +154,5 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 
 \* I06 currently runs as its own `examples` CI job; it will be folded into the
 integration matrix as `06_examples.sh`.
-
-† U06 is blocked: there is no `clean` hook in `builder/main.py` yet —
-`pio run -t clean` does not remove `build_RTL*/` or the root
-`compile_commands.json`. The test lands once that feature is implemented
-(tracked separately).
 
 Full design notes live in `doc/2026-06-03_ci-regression-tests.md` (local).
