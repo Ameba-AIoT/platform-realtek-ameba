@@ -3,10 +3,10 @@
 Regression test suite for `platform-realtek-ameba`. Three layers:
 
 ```
-Layer 1: lint         ~10s    static checks (Python syntax, JSON, board manifests)
-Layer 2a: unit        ~1min   mock-based Python tests, no SDK needed
-Layer 2b: integration ~5-10m  real SDK + toolchain, runs across all 3 boards
-Layer 3: hw_smoke     manual  hardware-in-the-loop, run before each release
+Layer 1: lint          ~10s    static checks (Python syntax, JSON, board manifests)
+Layer 2a: unit (U**)   ~1min   mock-based Python tests, no SDK needed
+Layer 2b: integ (I**)  ~5-10m  real SDK + toolchain, runs across all 3 boards
+Layer 3: hw (H**)      manual  hardware-in-the-loop, run before each release
 ```
 
 Layers 1+2 run on every push/PR via GitHub Actions
@@ -97,50 +97,62 @@ and `~/rtk-toolchain`, so each test ~30 seconds.
 Plug in a board (USB-UART → `/dev/ttyUSB0`), then:
 
 ```bash
-./tests/hw_smoke.sh
+./tests/run.sh hw          # runs every tests/hw/*.sh in order
 ```
 
-The script walks you through erase / upload / monitor verification
-interactively. Run before tagging a release.
+The `tests/hw/` scripts (H01–H05) walk you through
+upload / erase / uploadfs / monitor / debug interactively. Run before
+tagging a release.
 
 ## Layout
 
 ```
 tests/
-├── README.md                       # this file
-├── lint.sh                         # Layer 1
-├── unit/
-│   └── test_erase_fail_detection.py   # T07: silent-failure detection
-└── integration/
-    └── 01_install.sh               # T01: pio platform install + first build
+├── README.md                  # this file
+├── lint.sh                    # Layer 1
+├── run.sh                     # one-stop local runner
+├── unit/                      # Layer 2a — U** (CI, mock)
+│   └── test_erase_fail.py         # U01
+├── integration/               # Layer 2b — I** (CI, real build)
+│   └── 01_install.sh              # I01
+└── hw/                        # Layer 3 — H** (local, needs a board)
 ```
 
-More tests will arrive as Phase B / Phase C of the regression plan
-ships (see `.hermes/plans/2026-06-03_ci-regression-tests.md`).
+IDs are layered and contiguous: **U**nit / **I**ntegration / **H**ardware.
+Integration & hardware scripts carry an `NN_` filename prefix that fixes their
+run order; unit files are plain `test_<topic>.py` (pytest discovers them) with
+the U-id recorded here and in each file's docstring.
 
-## Test roadmap (full plan)
+## Test roadmap
 
 Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 
-| ID  | What it covers                                            | Type        | Where | Status |
-|-----|-----------------------------------------------------------|-------------|-------|--------|
-| —   | Python syntax / JSON / board-manifest fields              | lint        | CI    | ✅ |
-| T07 | erase silently "passes" when board not in download mode   | unit (mock) | CI    | ✅ |
-| T06 | `uploadfs` argv (exclusive end addr)                      | unit (mock) | CI    | ⬜ |
-| T11 | `upload` extra-image end-addr off-by-one boundary         | unit (mock) | CI    | ⬜ |
-| T08 | `pio check` metadata parsed from compile_commands.json    | unit (mock) | CI    | ⬜ |
-| T09 | SDK venv sha256-stamp idempotency                         | unit (mock) | CI    | ⬜ |
-| T04 | `clean` hook wipes extern build dir                       | unit (mock) | CI    | ⬜ |
-| —   | `_find_sdk_dir` / active-SDK resolution                   | unit (mock) | CI    | ⬜ |
-| T01 | `pio platform install` → SDK + venv + auto-skeleton       | integration | CI    | ✅ |
-| —   | every shipped `examples/ameba-*` compiles                 | integration | CI    | ✅ |
-| T02 | auto-skeleton + first build produces firmware.elf         | integration | CI    | ⬜ |
-| T03 | incremental rebuild is a no-op                            | integration | CI    | ⬜ |
-| T04 | `clean` removes build_RTL*/ + compile_commands.json       | integration | CI    | ⬜ |
-| T05 | `buildfs` image round-trips the contents of `data/`       | integration | CI    | ⬜ |
-| T09 | editing requirements.txt re-syncs the venv                | integration | CI    | ⬜ |
-| T10 | SDK upgrade re-syncs the venv                             | integration | CI    | ⬜ |
-| T12 | invalid inputs fail cleanly                               | integration | CI    | ⬜ |
-| HW  | upload / erase / uploadfs / monitor / debug on a board    | hw smoke    | local | ⬜ |
+| ID  | File                              | What it covers                                          | Where | Status |
+|-----|-----------------------------------|---------------------------------------------------------|-------|--------|
+| —   | `lint.sh`                         | Python syntax / JSON / board-manifest fields            | CI    | ✅ |
+| U01 | `unit/test_erase_fail.py`         | erase silently "passes" when board not in download mode | CI    | ✅ |
+| U02 | `unit/test_uploadfs_argv.py`      | `uploadfs` argv (exclusive end addr)                    | CI    | ⬜ |
+| U03 | `unit/test_upload_endaddr.py`     | `upload` extra-image end-addr off-by-one boundary       | CI    | ⬜ |
+| U04 | `unit/test_check_metadata.py`     | `pio check` metadata parsed from compile_commands.json  | CI    | ⬜ |
+| U05 | `unit/test_venv_stamp.py`         | SDK venv sha256-stamp idempotency                       | CI    | ⬜ |
+| U06 | `unit/test_clean_hook.py`         | `clean` hook wipes extern build dir                     | CI    | ⬜ |
+| U07 | `unit/test_resolve_sdk_dir.py`    | `_find_sdk_dir` / active-SDK resolution                 | CI    | ⬜ |
+| I01 | `integration/01_install.sh`       | `pio platform install` → SDK + venv + auto-skeleton     | CI    | ✅ |
+| I02 | `integration/02_first_build.sh`   | auto-skeleton + first build produces firmware.elf       | CI    | ⬜ |
+| I03 | `integration/03_incremental.sh`   | incremental rebuild is a no-op                          | CI    | ⬜ |
+| I04 | `integration/04_clean.sh`         | `clean` removes build_RTL*/ + compile_commands.json     | CI    | ⬜ |
+| I05 | `integration/05_buildfs.sh`       | `buildfs` image round-trips the contents of `data/`     | CI    | ⬜ |
+| I06 | `integration/06_examples.sh`      | every shipped `examples/ameba-*` compiles               | CI    | ✅* |
+| I07 | `integration/07_venv_resync.sh`   | editing requirements.txt re-syncs the venv              | CI    | ⬜ |
+| I08 | `integration/08_sdk_upgrade.sh`   | SDK upgrade re-syncs the venv                           | CI    | ⬜ |
+| I09 | `integration/09_invalid_inputs.sh`| invalid inputs fail cleanly                             | CI    | ⬜ |
+| H01 | `hw/01_upload.sh`                  | build + flash to a board                                | local | ⬜ |
+| H02 | `hw/02_erase.sh`                   | chip erase                                              | local | ⬜ |
+| H03 | `hw/03_uploadfs.sh`               | flash a LittleFS image                                   | local | ⬜ |
+| H04 | `hw/04_monitor.sh`               | serial monitor sees expected output                      | local | ⬜ |
+| H05 | `hw/05_debug.sh`                  | JLink/GDB attaches                                       | local | ⬜ |
+
+\* I06 currently runs as its own `examples` CI job; it will be folded into the
+integration matrix as `06_examples.sh`.
 
 Full design notes live in `doc/2026-06-03_ci-regression-tests.md` (local).

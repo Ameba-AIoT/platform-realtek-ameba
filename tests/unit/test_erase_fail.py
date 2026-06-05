@@ -1,4 +1,4 @@
-"""tests/unit/test_erase_fail_detection.py
+"""tests/unit/test_erase_fail.py  (U01)
 
 Verifies that `_run_ameba_flash()` correctly catches the SDK's
 "thread reports FAIL but main() exits 0" silent-failure pattern.

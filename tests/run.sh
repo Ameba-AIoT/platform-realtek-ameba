@@ -84,11 +84,21 @@ run_integration() {
 
 run_hw() {
     say "Layer 3: hardware smoke (needs a board on a serial port)"
-    if [ ! -x tests/hw_smoke.sh ]; then
-        echo "${c_dim}tests/hw_smoke.sh not present yet — skipping.${c_rst}"
+    shopt -s nullglob
+    local scripts=(tests/hw/*.sh)
+    shopt -u nullglob
+    if [ ${#scripts[@]} -eq 0 ]; then
+        echo "${c_dim}no tests/hw/*.sh yet — skipping.${c_rst}"
         return 0
     fi
-    ./tests/hw_smoke.sh
+    local fail=0 t
+    for t in "${scripts[@]}"; do
+        say "  $(basename "$t")"
+        if ! "$t"; then
+            echo "${c_red}FAIL: $(basename "$t")${c_rst}"; fail=1
+        fi
+    done
+    return $fail
 }
 
 case "$SUITE" in
