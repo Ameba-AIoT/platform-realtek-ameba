@@ -24,7 +24,8 @@ cleanup() { cd /; rm -rf "$PROJ"; }
 trap cleanup EXIT
 
 echo "=== I07 setup ($TEST_BOARD) ==="
-pio pkg install -g -p "file://$PLATFORM_PATH" >/dev/null 2>&1 || true
+pio pkg list -g 2>/dev/null | grep -q realtek-ameba \
+    || pio pkg install -g -p "file://$PLATFORM_PATH" >/dev/null 2>&1 || true
 mkdir -p "$PROJ/src"
 cat > "$PROJ/platformio.ini" <<EOF
 [env:$TEST_BOARD]

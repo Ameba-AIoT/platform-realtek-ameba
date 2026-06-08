@@ -32,7 +32,8 @@ hw_require_port() {
 }
 
 hw_install_platform() {
-    pio pkg install -g -p "file://${PLATFORM_PATH:-$(pwd)}" >/dev/null 2>&1 || true
+    pio pkg list -g 2>/dev/null | grep -q realtek-ameba \
+        || pio pkg install -g -p "file://${PLATFORM_PATH:-$(pwd)}" >/dev/null 2>&1 || true
 }
 
 # Create a throwaway project whose firmware prints $1 at boot (so monitor
