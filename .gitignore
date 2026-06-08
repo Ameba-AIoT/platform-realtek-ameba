@@ -44,8 +44,5 @@ tests/.pytest_cache/
 tests/**/__pycache__/
 .test-venv/
 
-# Local hardware board → serial-port map (bench-specific; see boards.conf.example)
-tests/hw/boards.local.conf
-
 # pio pkg pack output
 *.tar.gz

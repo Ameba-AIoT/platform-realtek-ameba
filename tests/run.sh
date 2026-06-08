@@ -106,13 +106,13 @@ run_hw() {
         return 0
     fi
 
-    local conf="${HW_BOARDS_CONF:-tests/hw/boards.local.conf}"
+    local conf="${HW_BOARDS_CONF:-tests/hw/boards.conf}"
     local fail=0 t rc board port baud
 
     if [ -f "$conf" ]; then
-        # Multi-board: each non-comment line is "<board> <port> [baud]".
-        # Read via fd 3 so the test commands keep their own stdin.
-        say "board map: $conf"
+        # Each non-comment line is "<board> <port> [baud]". Read via fd 3 so
+        # the test commands keep their own stdin.
+        say "board map: $conf  ← edit this file to match your boards/ports"
         while read -r board port baud _rest <&3; do
             [ -z "${board:-}" ] && continue
             case "$board" in \#*) continue ;; esac
@@ -125,8 +125,8 @@ run_hw() {
         return $fail
     fi
 
-    # No board map -> single-board fallback (TEST_BOARD / HW_PORT env).
-    say "no $conf — single-board mode (create it to test multiple boards)"
+    # boards.conf missing (deleted?) -> single-board fallback via env.
+    say "no $conf — single-board mode; restore it or set TEST_BOARD/HW_PORT"
     for t in "${scripts[@]}"; do
         rc=0; _run_hw_one "$t" "${TEST_BOARD:-}" "${HW_PORT:-}" "${HW_BAUD:-1500000}" || rc=$?
         [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ] && fail=1

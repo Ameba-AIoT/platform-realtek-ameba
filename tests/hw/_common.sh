@@ -25,7 +25,7 @@ hw_require_port() {
     p=$(hw_port)
     if [ -z "$p" ] || [ ! -e "$p" ]; then
         echo "  ⊘ SKIP: serial port '${p:-<none>}' not present" \
-             "(plug in the board / fix the port in boards.local.conf)" >&2
+             "(plug in the board / fix the port in tests/hw/boards.conf)" >&2
         exit 2
     fi
     echo "$p"

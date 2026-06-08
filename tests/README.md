@@ -97,27 +97,28 @@ and `~/rtk-toolchain`, so each test ~30 seconds.
 The `tests/hw/` scripts (H01–H05) cover upload / erase / uploadfs / monitor /
 debug against a real board. Run before tagging a release.
 
-**Multiple boards (recommended).** Map each board to its serial port once:
+**Edit `tests/hw/boards.conf`** — one line per board, then run:
 
 ```bash
-cp tests/hw/boards.conf.example tests/hw/boards.local.conf
-# edit boards.local.conf: one "<board_id> <port> [baud]" line per board
 ./tests/run.sh hw          # runs every H** against EACH board in the map
 ```
 
-`boards.local.conf` is gitignored (it's bench-specific). Adding a new board
-later is a **one-line edit** — no test-script changes. Each script SKIPs
-cleanly if its board/port isn't reachable.
+`run.sh hw` prints the config path on every run, so you always know where to
+edit. The map looks like:
 
-**Single board (quick).** With no `boards.local.conf`, it falls back to one
-board via env:
-
-```bash
-TEST_BOARD=pke8721daf-c13-f10 HW_PORT=/dev/ttyUSB0 ./tests/run.sh hw
+```
+pke8713ecm-va4-n43    /dev/ttyUSB0    1500000
+pke8710ecf-c53-f20    /dev/ttyUSB1    1500000
 ```
 
+Adding a board later is a **one-line edit** — no test-script changes. A board
+whose port isn't present is skipped (never flashed). No copy step, no env
+juggling.
+
 > Tip (WSL + usbipd): after `usbipd attach`, run `pio device list` to see
-> which `/dev/ttyUSB*` is which board.
+> which `/dev/ttyUSB*` is which board. `boards.conf` is tracked, so your edits
+> show up in `git status`; if you'd rather not commit your bench's ports, run
+> `git update-index --skip-worktree tests/hw/boards.conf`.
 
 ## Layout
 
