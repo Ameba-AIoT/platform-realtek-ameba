@@ -147,13 +147,18 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 | I07 | `integration/07_venv_resync.sh`   | editing requirements.txt re-syncs the venv              | CI    | ⬜ |
 | I08 | `integration/08_sdk_upgrade.sh`   | SDK upgrade re-syncs the venv                           | CI    | ⬜ |
 | I09 | `integration/09_invalid_inputs.sh`| invalid inputs fail cleanly                             | CI    | ⬜ |
-| H01 | `hw/01_upload.sh`                  | build + flash to a board                                | local | ⬜ |
-| H02 | `hw/02_erase.sh`                   | chip erase                                              | local | ⬜ |
-| H03 | `hw/03_uploadfs.sh`               | flash a LittleFS image                                   | local | ⬜ |
-| H04 | `hw/04_monitor.sh`               | serial monitor sees expected output                      | local | ⬜ |
-| H05 | `hw/05_debug.sh`                  | JLink/GDB attaches                                       | local | ⬜ |
+| H01 | `hw/01_upload.sh`                 | build + flash to a board                                | local | 🔧‡ |
+| H02 | `hw/02_erase.sh`                  | chip erase + reflash                                    | local | 🔧‡ |
+| H03 | `hw/03_uploadfs.sh`               | flash a LittleFS image (skips if no VFS1)               | local | 🔧‡ |
+| H04 | `hw/04_monitor.sh`                | upload marker firmware, monitor sees it on serial       | local | 🔧‡ |
+| H05 | `hw/05_debug.sh`                  | J-Link GDB prerequisites present                        | local | 🔧‡ |
 
 \* I06 currently runs as its own `examples` CI job; it will be folded into the
 integration matrix as `06_examples.sh`.
+
+‡ Hardware scripts are written and wired into `./tests/run.sh hw` (each SKIPs
+cleanly — exit 2 — when no board/J-Link is present). They can't run in CI and
+haven't been verified on a physical board yet; run them locally with a board
+attached (`HW_PORT=/dev/ttyUSB0 ./tests/run.sh hw`).
 
 Full design notes live in `doc/2026-06-03_ci-regression-tests.md` (local).

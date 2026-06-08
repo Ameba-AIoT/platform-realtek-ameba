@@ -85,16 +85,19 @@ run_integration() {
 run_hw() {
     say "Layer 3: hardware smoke (needs a board on a serial port)"
     shopt -s nullglob
-    local scripts=(tests/hw/*.sh)
+    local scripts=(tests/hw/[0-9]*.sh)  # numbered scripts only; skip _common.sh
     shopt -u nullglob
     if [ ${#scripts[@]} -eq 0 ]; then
         echo "${c_dim}no tests/hw/*.sh yet — skipping.${c_rst}"
         return 0
     fi
-    local fail=0 t
+    local fail=0 t rc
     for t in "${scripts[@]}"; do
         say "  $(basename "$t")"
-        if ! "$t"; then
+        rc=0; "$t" || rc=$?
+        if [ "$rc" -eq 2 ]; then
+            echo "${c_dim}  (skipped — no hardware / prereq)${c_rst}"
+        elif [ "$rc" -ne 0 ]; then
             echo "${c_red}FAIL: $(basename "$t")${c_rst}"; fail=1
         fi
     done
