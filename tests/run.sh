@@ -48,7 +48,10 @@ _find_pytest_python() {
     )
     local py
     for py in "${cands[@]}"; do
-        if command -v "$py" >/dev/null 2>&1 && "$py" -c "import pytest" 2>/dev/null; then
+        # Probe from / not the repo root: `import pytest` pulls in stdlib
+        # `platform`, which would resolve to our platform.py here and fail.
+        if command -v "$py" >/dev/null 2>&1 \
+           && ( cd / && "$py" -c "import pytest" ) 2>/dev/null; then
             echo "$py"; return 0
         fi
     done
