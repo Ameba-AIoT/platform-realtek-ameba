@@ -21,11 +21,15 @@ echo "  building + flashing marker firmware..."
 pio run -e "$(hw_board)" -t upload > up.log 2>&1 \
     || { echo "❌ H04: upload failed"; tail -30 up.log; exit 1; }
 
-echo "  reading serial ~18s, looking for '$MARKER'..."
-if timeout 18 pio device monitor -e "$(hw_board)" 2>/dev/null | grep -qm1 "$MARKER"; then
+echo "  reading serial ~18s @ $(hw_baud), looking for '$MARKER'..."
+# Pass port + baud explicitly: `pio device monitor -e <env>` defaults to 9600
+# unless monitor_speed is picked up, which would read garbage at the board's
+# 1.5 Mbaud. -p/-b removes that dependency.
+if timeout 18 pio device monitor -p "$PORT" -b "$(hw_baud)" 2>/dev/null \
+        | grep -qm1 "$MARKER"; then
     echo "✅ H04 monitor: PASS (saw '$MARKER')"
 else
-    echo "❌ H04 monitor: marker not seen. Board not running, wrong baud, or"
-    echo "   needs a reset? Try: pio device monitor -e $(hw_board)"
+    echo "❌ H04 monitor: marker not seen. Board not running, or needs a reset?"
+    echo "   Try: pio device monitor -p $PORT -b $(hw_baud)"
     exit 1
 fi
