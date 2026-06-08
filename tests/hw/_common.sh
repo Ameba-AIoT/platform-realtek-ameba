@@ -18,12 +18,14 @@ hw_port() {
     ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -1
 }
 
-# Echo the port, or exit 2 (treated as SKIP) if no board is attached.
+# Echo the port, or exit 2 (treated as SKIP) if the board's port isn't
+# actually present (no board attached, or a mapped port that doesn't exist).
 hw_require_port() {
     local p
     p=$(hw_port)
-    if [ -z "$p" ]; then
-        echo "  ⊘ SKIP: no serial port found (plug in a board or set HW_PORT=/dev/ttyUSBx)" >&2
+    if [ -z "$p" ] || [ ! -e "$p" ]; then
+        echo "  ⊘ SKIP: serial port '${p:-<none>}' not present" \
+             "(plug in the board / fix the port in boards.local.conf)" >&2
         exit 2
     fi
     echo "$p"

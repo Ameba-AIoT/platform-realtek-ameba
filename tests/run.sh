@@ -82,8 +82,22 @@ run_integration() {
     return $fail
 }
 
+# Run one hw script for a given board/port/baud; classify the exit code.
+# exit 0 = pass, 2 = skip (no board / prereq), other = fail. Returns the rc.
+_run_hw_one() {
+    local script="$1" board="$2" port="$3" baud="$4" rc=0
+    say "  $(basename "$script")"
+    TEST_BOARD="$board" HW_PORT="$port" HW_BAUD="$baud" "$script" || rc=$?
+    if [ "$rc" -eq 2 ]; then
+        echo "${c_dim}  (skipped — no hardware / prereq)${c_rst}"
+    elif [ "$rc" -ne 0 ]; then
+        echo "${c_red}  FAIL: $(basename "$script")${board:+ on $board}${c_rst}"
+    fi
+    return "$rc"
+}
+
 run_hw() {
-    say "Layer 3: hardware smoke (needs a board on a serial port)"
+    say "Layer 3: hardware smoke"
     shopt -s nullglob
     local scripts=(tests/hw/[0-9]*.sh)  # numbered scripts only; skip _common.sh
     shopt -u nullglob
@@ -91,15 +105,31 @@ run_hw() {
         echo "${c_dim}no tests/hw/*.sh yet — skipping.${c_rst}"
         return 0
     fi
-    local fail=0 t rc
+
+    local conf="${HW_BOARDS_CONF:-tests/hw/boards.local.conf}"
+    local fail=0 t rc board port baud
+
+    if [ -f "$conf" ]; then
+        # Multi-board: each non-comment line is "<board> <port> [baud]".
+        # Read via fd 3 so the test commands keep their own stdin.
+        say "board map: $conf"
+        while read -r board port baud _rest <&3; do
+            [ -z "${board:-}" ] && continue
+            case "$board" in \#*) continue ;; esac
+            say "── ${board} @ ${port:-?} ──"
+            for t in "${scripts[@]}"; do
+                rc=0; _run_hw_one "$t" "$board" "${port:-}" "${baud:-1500000}" || rc=$?
+                [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ] && fail=1
+            done
+        done 3< "$conf"
+        return $fail
+    fi
+
+    # No board map -> single-board fallback (TEST_BOARD / HW_PORT env).
+    say "no $conf — single-board mode (create it to test multiple boards)"
     for t in "${scripts[@]}"; do
-        say "  $(basename "$t")"
-        rc=0; "$t" || rc=$?
-        if [ "$rc" -eq 2 ]; then
-            echo "${c_dim}  (skipped — no hardware / prereq)${c_rst}"
-        elif [ "$rc" -ne 0 ]; then
-            echo "${c_red}FAIL: $(basename "$t")${c_rst}"; fail=1
-        fi
+        rc=0; _run_hw_one "$t" "${TEST_BOARD:-}" "${HW_PORT:-}" "${HW_BAUD:-1500000}" || rc=$?
+        [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ] && fail=1
     done
     return $fail
 }

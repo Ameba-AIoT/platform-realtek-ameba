@@ -94,15 +94,30 @@ and `~/rtk-toolchain`, so each test ~30 seconds.
 
 ### Layer 3 — hardware smoke (manual)
 
-Plug in a board (USB-UART → `/dev/ttyUSB0`), then:
+The `tests/hw/` scripts (H01–H05) cover upload / erase / uploadfs / monitor /
+debug against a real board. Run before tagging a release.
+
+**Multiple boards (recommended).** Map each board to its serial port once:
 
 ```bash
-./tests/run.sh hw          # runs every tests/hw/*.sh in order
+cp tests/hw/boards.conf.example tests/hw/boards.local.conf
+# edit boards.local.conf: one "<board_id> <port> [baud]" line per board
+./tests/run.sh hw          # runs every H** against EACH board in the map
 ```
 
-The `tests/hw/` scripts (H01–H05) walk you through
-upload / erase / uploadfs / monitor / debug interactively. Run before
-tagging a release.
+`boards.local.conf` is gitignored (it's bench-specific). Adding a new board
+later is a **one-line edit** — no test-script changes. Each script SKIPs
+cleanly if its board/port isn't reachable.
+
+**Single board (quick).** With no `boards.local.conf`, it falls back to one
+board via env:
+
+```bash
+TEST_BOARD=pke8721daf-c13-f10 HW_PORT=/dev/ttyUSB0 ./tests/run.sh hw
+```
+
+> Tip (WSL + usbipd): after `usbipd attach`, run `pio device list` to see
+> which `/dev/ttyUSB*` is which board.
 
 ## Layout
 
