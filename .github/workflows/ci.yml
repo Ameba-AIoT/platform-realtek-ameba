@@ -164,8 +164,9 @@ jobs:
           - 03_incremental
           - 04_clean
           - 05_buildfs
+          - 07_build_flags
         # More integration scripts get added here as they land:
-        # 07_venv_resync, 08_sdk_upgrade, 09_invalid_inputs, ...
+        # 08_sdk_upgrade, 09_invalid_inputs, ...
     steps:
       - uses: actions/checkout@v4
 

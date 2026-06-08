@@ -160,7 +160,7 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 | I04 | `integration/04_clean.sh`         | `clean` removes build_RTL*/ + compile_commands.json     | CI    | ✅ |
 | I05 | `integration/05_buildfs.sh`       | `buildfs` packs data/ into a partition-sized LittleFS   | CI    | ✅ |
 | I06 | `integration/06_examples.sh`      | every shipped `examples/ameba-*` compiles               | CI    | ✅* |
-| I07 | `integration/07_venv_resync.sh`   | editing requirements.txt re-syncs the venv              | CI    | ⬜ |
+| I07 | `integration/07_build_flags.sh`   | build_flags -D reaches user src (end-to-end compile)    | CI    | ✅ |
 | I08 | `integration/08_sdk_upgrade.sh`   | SDK upgrade re-syncs the venv                           | CI    | ⬜ |
 | I09 | `integration/09_invalid_inputs.sh`| invalid inputs fail cleanly                             | CI    | ⬜ |
 | H01 | `hw/01_upload.sh`                 | build + flash to a board                                | local | 🔧‡ |
