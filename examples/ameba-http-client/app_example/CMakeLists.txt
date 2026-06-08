@@ -7,6 +7,7 @@
 
 set(private_sources)
 set(_pio_src_include_dirs)
+set(_pio_build_definitions)
 
 ameba_list_append(private_sources app_main.c)
 
@@ -24,4 +25,9 @@ target_include_directories(${c_CURRENT_TARGET_NAME} PRIVATE
 
 if(_pio_src_include_dirs)
     target_include_directories(${c_CURRENT_TARGET_NAME} PRIVATE ${_pio_src_include_dirs})
+endif()
+
+# platformio.ini build_flags -D macros (forwarded by the OPTIONAL fragment).
+if(_pio_build_definitions)
+    target_compile_definitions(${c_CURRENT_TARGET_NAME} PRIVATE ${_pio_build_definitions})
 endif()

@@ -137,6 +137,7 @@ Status: ✅ shipped · ⬜ planned. "Where" follows the CI-vs-local rule above.
 | U05 | `unit/test_venv_stamp.py`         | SDK venv sha256-stamp idempotency                       | CI    | ✅ |
 | U06 | `unit/test_clean_hook.py`         | clean artifact list covers build dir, spares source     | CI    | ✅ |
 | U07 | `unit/test_resolve_sdk_dir.py`    | `_find_sdk_dir` lookup priority + not-found error       | CI    | ✅ |
+| U08 | `unit/test_build_defines.py`      | `_parse_build_defines` extracts -D macros from build_flags | CI | ✅ |
 | I01 | `integration/01_install.sh`       | `pio platform install` → SDK + venv + auto-skeleton     | CI    | ✅ |
 | I02 | `integration/02_first_build.sh`   | multi-file src/ bridged + compiled → firmware.elf       | CI    | ✅ |
 | I03 | `integration/03_incremental.sh`   | 2nd build reuses SDK+venv, keeps user-edited skeleton   | CI    | ✅ |

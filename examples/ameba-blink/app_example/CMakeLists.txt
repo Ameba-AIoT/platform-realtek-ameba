@@ -14,6 +14,7 @@
 
 set(private_sources)
 set(_pio_src_include_dirs)
+set(_pio_build_definitions)
 
 # (B) SDK-style explicit list — at minimum we need the entry point.
 ameba_list_append(private_sources app_main.c)
@@ -34,4 +35,9 @@ ameba_add_internal_library(app_example
 # function exports it via PARENT_SCOPE -- see SDK cmake/utility.cmake).
 if(_pio_src_include_dirs)
     target_include_directories(${c_CURRENT_TARGET_NAME} PRIVATE ${_pio_src_include_dirs})
+endif()
+
+# platformio.ini build_flags -D macros (forwarded by the OPTIONAL fragment).
+if(_pio_build_definitions)
+    target_compile_definitions(${c_CURRENT_TARGET_NAME} PRIVATE ${_pio_build_definitions})
 endif()

@@ -186,6 +186,7 @@ def _ensure_extern_project_layout():
                 "\n"
                 "set(private_sources)\n"
                 "set(_pio_src_include_dirs)\n"
+                "set(_pio_build_definitions)\n"
                 "\n"
                 "ameba_list_append(private_sources app_main.c)\n"
                 "\n"
@@ -200,6 +201,13 @@ def _ensure_extern_project_layout():
                 "if(_pio_src_include_dirs)\n"
                 "    target_include_directories(${c_CURRENT_TARGET_NAME}"
                 " PRIVATE ${_pio_src_include_dirs})\n"
+                "endif()\n"
+                "\n"
+                "# platformio.ini build_flags -D macros (forwarded by the\n"
+                "# OPTIONAL fragment above).\n"
+                "if(_pio_build_definitions)\n"
+                "    target_compile_definitions(${c_CURRENT_TARGET_NAME}"
+                " PRIVATE ${_pio_build_definitions})\n"
                 "endif()\n"
             )
         print(f"[ameba] created {app_cmake}")
@@ -317,6 +325,36 @@ def _ensure_extern_project_layout():
         print(f"[ameba] created {starter}")
 
 
+def _parse_build_defines(raw_flags):
+    """Extract -D macros from a platformio.ini ``build_flags`` string.
+
+    Returns a list like ``["DEBUG", "FOO=1"]`` suitable for cmake
+    ``target_compile_definitions``. Handles both ``-DFOO`` and ``-D FOO``.
+    Quoted values are preserved via shlex.
+    """
+    if not raw_flags or not raw_flags.strip():
+        return []
+    import shlex
+    try:
+        tokens = shlex.split(raw_flags)
+    except ValueError:
+        tokens = raw_flags.split()
+    defines = []
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok == "-D" and i + 1 < len(tokens):
+            defines.append(tokens[i + 1])
+            i += 2
+            continue
+        if tok.startswith("-D"):
+            defines.append(tok[2:])
+            i += 1
+            continue
+        i += 1
+    return [d for d in defines if d]
+
+
 def _bridge_src_into_app_example():
     """Make user-written ``src/*.[c|cpp]`` actually get compiled.
 
@@ -338,55 +376,86 @@ def _bridge_src_into_app_example():
     src_dir = join(PROJECT_DIR, "src")
     fragment = join(PROJECT_DIR, "app_example", "_pio_src_fragment.cmake")
 
-    if not isdir(src_dir):
-        # No src/, nothing to bridge. Remove stale fragment if present.
-        if isfile(fragment):
-            os.remove(fragment)
-        return
-
-    # Collect all user source files under src/ (recursive)
+    # Collect user source files under src/ (recursive). May be empty.
     sources = []
-    for root, _dirs, files in os.walk(src_dir):
-        for f in files:
-            if f.lower().endswith((".c", ".cpp", ".cc", ".cxx", ".s", ".S")):
-                full = join(root, f)
-                # cmake on Linux/WSL handles forward slashes fine
-                sources.append(full.replace(os.sep, "/"))
+    if isdir(src_dir):
+        for root, _dirs, files in os.walk(src_dir):
+            for f in files:
+                if f.lower().endswith((".c", ".cpp", ".cc", ".cxx", ".s", ".S")):
+                    full = join(root, f)
+                    # cmake on Linux/WSL handles forward slashes fine
+                    sources.append(full.replace(os.sep, "/"))
 
-    if not sources:
+    # Include dirs: src/ itself + any subdir holding headers (only when we
+    # actually have sources to compile).
+    include_dirs = set()
+    if sources:
+        include_dirs.add(src_dir.replace(os.sep, "/"))
+        for root, _dirs, files in os.walk(src_dir):
+            if any(f.lower().endswith((".h", ".hpp", ".hh", ".hxx")) for f in files):
+                include_dirs.add(root.replace(os.sep, "/"))
+
+    # -D macros from platformio.ini build_flags. The SDK ignores EXTRA_CFLAGS,
+    # so forwarding them onto the app_example library here is how build_flags
+    # actually reach the user's code.
+    defines = _parse_build_defines(env.subst("$BUILD_FLAGS"))
+
+    # Nothing to contribute (no user sources AND no build defines) -> drop any
+    # stale fragment and bail.
+    if not sources and not defines:
         if isfile(fragment):
             os.remove(fragment)
         return
 
-    # Find include dirs: any directory under src/ that contains .h files,
-    # plus src/ itself.
-    include_dirs = {src_dir.replace(os.sep, "/")}
-    for root, _dirs, files in os.walk(src_dir):
-        if any(f.lower().endswith((".h", ".hpp", ".hh", ".hxx")) for f in files):
-            include_dirs.add(root.replace(os.sep, "/"))
+    # An app_example/CMakeLists.txt generated before build_flags support won't
+    # apply these defines. Nudge the user (one-time-ish) rather than silently
+    # dropping their build_flags.
+    if defines:
+        app_cmake = join(PROJECT_DIR, "app_example", "CMakeLists.txt")
+        try:
+            with open(app_cmake) as fh:
+                _has_apply = "_pio_build_definitions" in fh.read()
+        except OSError:
+            _has_apply = True  # can't read it -> don't nag
+        if not _has_apply:
+            print("[ameba] WARNING: app_example/CMakeLists.txt predates "
+                  "build_flags support, so your build_flags -D macros won't "
+                  "take effect. Delete app_example/CMakeLists.txt to "
+                  "regenerate it, or add after the library:\n"
+                  "    if(_pio_build_definitions)\n"
+                  "        target_compile_definitions(${c_CURRENT_TARGET_NAME}"
+                  " PRIVATE ${_pio_build_definitions})\n"
+                  "    endif()")
 
     lines = [
         "# Auto-generated by platform-realtek-ameba. Do not edit.",
-        "# Bridges PIO's src/ directory into the Ameba app_example library.",
+        "# Bridges PIO's src/ + build_flags into the Ameba app_example library.",
         "# Regenerated on every `pio run`.",
         "",
-        "ameba_list_append(private_sources",
     ]
-    for s in sorted(sources):
-        lines.append(f"    {s}")
-    lines.append(")")
-    lines.append("")
+    if sources:
+        lines.append("ameba_list_append(private_sources")
+        for s in sorted(sources):
+            lines.append(f"    {s}")
+        lines.append(")")
+        lines.append("")
 
+    # NOTE for the two set() blocks below: we do NOT call target_* here -- the
+    # library target isn't created until ameba_add_internal_library() runs
+    # later in app_example/CMakeLists.txt. We emit CMake list variables that
+    # the user's CMakeLists.txt applies after the library exists.
     if include_dirs:
-        # NOTE: do not call target_include_directories() here -- the
-        # CURRENT_LIB_NAME variable is not yet defined when this fragment
-        # is include()-d (it is set later by ameba_add_internal_library).
-        # Instead we emit a CMake list variable that the user's
-        # CMakeLists.txt picks up after the library is created.
-        lines.append("# Include dirs collected from src/ — applied below by")
-        lines.append("# the user's app_example/CMakeLists.txt after the library exists.")
+        lines.append("# src/ include dirs — applied after the library exists.")
         lines.append("set(_pio_src_include_dirs")
         for d in sorted(include_dirs):
+            lines.append(f"    {d}")
+        lines.append(")")
+        lines.append("")
+
+    if defines:
+        lines.append("# build_flags -D macros — applied after the library exists.")
+        lines.append("set(_pio_build_definitions")
+        for d in defines:
             lines.append(f"    {d}")
         lines.append(")")
         lines.append("")
@@ -403,8 +472,8 @@ def _bridge_src_into_app_example():
             pass
     with open(fragment, "w") as fh:
         fh.write(new_content)
-    print(f"[ameba] bridged {len(sources)} source file(s) from src/ -> "
-          f"app_example/_pio_src_fragment.cmake")
+    print(f"[ameba] bridged {len(sources)} source file(s) + {len(defines)} "
+          f"build define(s) -> app_example/_pio_src_fragment.cmake")
 
 
 # -----------------------------------------------------------------------------
